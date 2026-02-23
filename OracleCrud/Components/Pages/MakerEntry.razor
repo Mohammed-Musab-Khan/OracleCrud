@@ -1,0 +1,88 @@
+﻿@page "/maker-entry"
+@using OracleCrud.Models
+@using OracleCrud.Services
+@inject DataService DataService
+@inject NavigationManager Nav
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4>Reference Data Entry (Maker)</h4>
+        </div>
+        <div class="card-body">
+            <EditForm Model="@entry" OnValidSubmit="HandleSubmit" FormName="MakerEntryForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold">From ID</label>
+                        <InputText @bind-Value="entry.FromId" class="form-control" placeholder="e.g. 001" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold">Domain Entity</label>
+                        <InputText @bind-Value="entry.DomainEntity" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold">Entity Name</label>
+                        <InputText @bind-Value="entry.EntityName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold">Department</label>
+                        <InputSelect @bind-Value="entry.Department" class="form-control">
+                            <option value="">-- Select --</option>
+                            <option value="HR">HR</option>
+                            <option value="IT">IT</option>
+                            <option value="Finance">Finance</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox"
+                               checked="@(entry.IsActive == 1)"
+                               @onchange="@((e) => entry.IsActive = (bool)e.Value ? 1 : 0)"
+                               class="form-check-input" id="isActive" />
+                        <label class="form-check-label" for="isActive">Is Active?</label>
+                    </div>
+                </div>
+
+                <hr />
+                <button type="submit" class="btn btn-success px-5">Submit to Checker</button>
+            </EditForm>
+
+            @if (!string.IsNullOrEmpty(message))
+            {
+                <div class="alert alert-info mt-3">@message</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    public ReferenceData entry { get; set; } = new();
+    private string? message;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            // For now, we hardcode 'Maker1'. Later this comes from your Login Session.
+            await DataService.CreateEntryAsync(entry, "Maker1");
+
+            message = "Success! Record sent for approval.";
+            entry = new(); // Reset the form
+        }
+        catch (Exception ex)
+        {
+            message = "Error saving to Oracle: " + ex.Message;
+        }
+    }
+}

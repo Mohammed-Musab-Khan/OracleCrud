@@ -1,0 +1,99 @@
+﻿@page "/checker-tray"
+@using OracleCrud.Models
+@using OracleCrud.Services
+@inject DataService DataService
+@rendermode InteractiveServer
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Checker Approval Tray</h4>
+            <button class="btn btn-sm btn-outline-light" @onclick="LoadData">Refresh List</button>
+        </div>
+        <div class="card-body">
+            @if (pendingEntries == null)
+            {
+                <p><em>Loading pending records...</em></p>
+            }
+            else if (!pendingEntries.Any())
+            {
+                <div class="alert alert-success">No pending records found! Everything is up to date.</div>
+            }
+            else
+            {
+                <table class="table table-hover table-bordered mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>From ID</th>
+                            <th>Entity Name</th>
+                            <th>Department</th>
+                            <th>Created By</th>
+                            <th>Created On</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in pendingEntries)
+                        {
+                            <tr>
+                                <td>@item.FromId</td>
+                                <td>@item.EntityName</td>
+                                <td>@item.Department</td>
+                                <td>@item.CreatedBy</td>
+                                <td>@item.CreatedOn.ToString("dd-MMM-yyyy HH:mm")</td>
+                                <td class="text-center">
+                                    <button class="btn btn-success btn-sm me-2"
+                                            @onclick="() => ProcessUpdate(item.Id, 1)">
+                                        Approve
+                                    </button>
+                                    <button class="btn btn-danger btn-sm"
+                                            @onclick="() => ProcessUpdate(item.Id, 2)">
+                                        Reject
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="alert alert-info mt-3">@statusMessage</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ReferenceData>? pendingEntries;
+    private string? statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        pendingEntries = await DataService.GetPendingEntriesAsync();
+    }
+
+    private async Task ProcessUpdate(int id, int newStatus)
+    {
+        try
+        {
+            // For the demo, we hardcode 'Checker1'
+            await DataService.UpdateStatusAsync(id, newStatus, "Checker1");
+
+            statusMessage = newStatus == 1 ? "Record Approved Successfully!" : "Record Rejected.";
+
+            // Refresh the list so the processed record disappears
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = "Error updating Oracle: " + ex.Message;
+        }
+    }
+}
